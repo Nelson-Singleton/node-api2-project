@@ -10,9 +10,7 @@ server.use(express.json()) // teach server json
 
 //set up our endpoints.
 
-server.use('/api/posts', (req, res) => {
-    res.send ('<h1>Posts</h1>')
-})
+server.use('/api/posts', postsRouter)
 
 server.get('/', (req, res) => {
     res.send('<h1> Post API </h>')
