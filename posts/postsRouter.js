@@ -56,44 +56,53 @@ router.post('/', (req, res) => {
 })
 ////////////////////////////////////////////////// Post to comments
 router.post('/:id/comments', (req, res) => {
-    let data = req.body
-    let id = data.id
-    .then (post => {
-        if(!id) {
-            res.status(404).json({message: "The post with the specified ID does not exist."})
-        } else if (!data.text){
-            res.status(400).json({errorMessage: "Please provide text for the comment."})
-        } else if (data.text){
-            db.insertComment(data)
-            res.status(201).json({data})
-        } else {res.status(500).json({ error: "There was an error while saving the comment to the database"})}
-    })
+    let comment = req.body
     
+    function isValidComment(comment) {
+        return Boolean(comment.text && comment.post_id);
+    }
+
+    if(isValidComment(comment)){
+
+        db.insertComment(comment)
+        .then (post => {
+            res.status(201).json({post})
+        })
+        .catch(error => {res.status(500).json({error: "There was an error while saving the post to the database."})})
+    } else {res.status(400).json({errorMessage: "Please provide text and id for the comment."})}
 })
+
+    
 //////////////////////////////////////////////// Delete
 router.delete('/:id', (req, res) => {
     db.remove(req.params.id)
-        .then(count => {
-            if(count > 0){
-                res.status(200).json({message: "The post has been deleted."})
-            }else {res.status(404).json({message: "The post could not be found."})}
+        .then(post => {
+            if(post > 0){res.status(200).json({message: "The post has been deleted."})
+            } else {res.status(404).json({message: "The post could not be found."})}
         })
-        .catch(res.status(500).json({error: "The post could not be removed."}))
+        .catch( error => res.status(500).json({error: "The post could not be removed."}))
     
 })
 /////////////////////////////////////////////// Put
-router.put('/:id', (req, res) => {
-    const changes = req.body
-    db.update(req.params.id, changes)
-        .then(p => {
-            if(p){
-                res.status(200).json(p)
-            } else if (!p){
-                res.status(404).json({message: "The post with the specified Id does not exist"})
-            } else if (!req.body.title || !req.body.contents){
-                res.status(400).json({errorMessage: "Please provide title and content for the post"})
-            } else res.status(500).json({error: "The post information could not be modified"})
+
+
+router.put('/:id', async (req, res) => { //any part of the object can be changed.
+        const changes = req.body
+        db.update(req.params.id, changes)
+        let findId = await db.findById(req.params.id)
+            
+                if(findId  = 1 && req.body.title && req.body.contents){
+                   try{
+                       res.status(200).json(changes)
+                    }                    
+                   catch(error){res.status(500)}
+
+                } else if (findId = 0){
+                    res.status(404).json({message: "The post with the specified Id does not exist"})
+                } else if (!req.body.title || !req.body.contents){
+                    res.status(400).json({errorMessage: "Please provide title and content for the post"})
+                } else res.status(500)
         })
-})
+/////////////////////////////////////////////////
 
 module.exports = router;
